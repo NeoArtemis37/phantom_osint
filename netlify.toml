@@ -1,0 +1,167 @@
+# =============================================================================
+# PHANTOM — Netlify Deployment Configuration
+# Next.js 16 App Router (SSR + API routes via @netlify/plugin-nextjs)
+# Database: Supabase (PostgreSQL) — see supabase/README.md for full setup
+# =============================================================================
+#
+# ⚠️  READ BEFORE DEPLOYING
+# -----------------------------------------------------------------------------
+# The Prisma schema (prisma/schema.prisma) is configured for PostgreSQL on
+# Supabase. Two database URLs are REQUIRED in the Netlify UI:
+#
+#   DATABASE_URL  → Supabase TRANSACTION POOLER (port 6543)
+#                   Must end with: ?pgbouncer=true&connection_limit=1&prepared_statements=false
+#                   Used by the Next.js app at runtime (Netlify Functions).
+#   DIRECT_URL    → Supabase DIRECT CONNECTION (port 5432)
+#                   Used by Prisma CLI for migrations / `db push` / `db seed`.
+#                   Cannot use the pooler here — PgBouncer transaction mode
+#                   can't run DDL.
+#
+# Full step-by-step guide: supabase/README.md
+#
+# -----------------------------------------------------------------------------
+# REMAINING caveat: Socket.IO mini-service (examples/websocket/server.ts:3003)
+# -----------------------------------------------------------------------------
+# Netlify Functions are stateless and short-lived — they cannot host a
+# persistent socket.io server. Options:
+#   • Ably / Pusher / Socket.io Cloud  (managed WebSocket gateways)
+#   • Self-host the service on Railway / Render / Fly.io and point the
+#     frontend's NEXT_PUBLIC_SOCKET_URL at it.
+# The PHANTOM UI degrades gracefully without WebSockets (chat is the only
+# consumer); all OSINT / dashboard features work over HTTPS.
+#
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Build settings
+# -----------------------------------------------------------------------------
+[build]
+  # Swap in the PostgreSQL (Supabase) schema, generate the Prisma Client
+  # against it, then build Next.js.
+  #
+  # The committed prisma/schema.prisma is SQLite (for local dev). The Supabase
+  # production schema lives in prisma/schema.supabase.prisma. We copy it into
+  # place at build time so the generated @prisma/client targets PostgreSQL.
+  #
+  # We bypass the custom `bun run build` script (which copies files into the
+  # standalone server bundle) because the Netlify Next.js plugin manages its
+  # own output. A plain `next build` is all the plugin needs.
+  command = "cp prisma/schema.supabase.prisma prisma/schema.prisma && prisma generate && next build"
+
+  # The Next.js plugin publishes the .next directory; this value is required
+  # by Netlify's UI but the plugin overrides the actual deployment artifact.
+  publish = ".next"
+
+  # Functions directory is managed by the Next.js plugin (it creates
+  # serverless functions for each route automatically). Leave default.
+  # functions = "netlify/functions"
+
+
+# -----------------------------------------------------------------------------
+# Plugin: Official Next.js Runtime
+# Handles SSR, API routes, ISR, Image Optimization, and middleware on Netlify.
+# Make sure this plugin is installed: bun add -D @netlify/plugin-nextjs
+# -----------------------------------------------------------------------------
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+
+# -----------------------------------------------------------------------------
+# Environment — applies to build + functions
+# -----------------------------------------------------------------------------
+[build.environment]
+  # Next.js 16 requires Node 20+; Netlify defaults to 20 but pin it.
+  NODE_VERSION = "20"
+
+  # Prisma: pull engines from the official mirror for reliable Linux builds.
+  PRISMA_ENGINES_MIRROR = "https://binaries.prisma.sh"
+
+  # Hint for the Next.js plugin to skip telemetry during CI builds.
+  NEXT_TELEMETRY_DISABLED = "1"
+
+  # Trust the Netlify-provided X-Forwarded-* headers (used by JWT / audit logs).
+  # NextAuth already sets trustHost:true in src/lib/auth.ts — keep this consistent.
+  NEXTAUTH_TRUST_HOST = "true"
+
+
+# -----------------------------------------------------------------------------
+# Runtime environment variables (set these in the Netlify UI:
+#   Site settings → Environment variables → Production / All deploy contexts)
+# -----------------------------------------------------------------------------
+# Required (DO NOT commit real values to git — set them in the Netlify UI):
+#   DATABASE_URL       → Supabase pooler: postgresql://postgres.REF:PASS@...pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&prepared_statements=false
+#   DIRECT_URL         → Supabase direct: postgresql://postgres:PASS@db.REF.supabase.co:5432/postgres
+#   JWT_SECRET         → 64+ random chars  (used by src/lib/jwt.ts)
+#   NEXTAUTH_SECRET    → 64+ random chars  (used by src/lib/auth.ts)
+#   NEXTAUTH_URL       → https://your-site.netlify.app
+#   ZAI_API_KEY        → from z-ai-web-dev-sdk console (used by all OSINT routes)
+#
+# Optional:
+#   NEXT_PUBLIC_SOCKET_URL → wss://your-websocket-host  (Ably / Pusher / Railway)
+#                            leave unset to disable realtime chat features.
+
+
+
+# -----------------------------------------------------------------------------
+# Function tuning — Next.js SSR + API routes run as Netlify Functions.
+# Defaults: 1024MB memory, 10s timeout (Netlify max on Pro: 26S, Free: 10S).
+# -----------------------------------------------------------------------------
+[functions]
+  # Bump timeout for long-running OSINT scrapers (TikTok tracker, Crawler,
+  # FULL OSINT SWEEP). Free tier maxes at 10s; Pro needed for 26s.
+  node_bundler = "esbuild"
+  # With the Next.js plugin most routes are bundled automatically; this only
+  # applies to any hand-written functions under netlify/functions/.
+  directory = "netlify/functions"
+
+
+# -----------------------------------------------------------------------------
+# Security headers — applied to all responses
+# -----------------------------------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    X-XSS-Protection = "1; mode=block"
+    # Strict-Transport-Security is auto-injected by Netlify for HTTPS sites.
+    # Content-Security-Policy is intentionally omitted here because PHANTOM
+    # loads remote OSINT images / screenshots from arbitrary domains; tune a
+    # CSP per-deployment if hardening is required.
+
+# Cache immutable Next.js static assets aggressively.
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache the public/ folder (logo, robots) less aggressively.
+[[headers]]
+  for = "/public/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+
+# -----------------------------------------------------------------------------
+# Redirects — the Next.js plugin already handles client-side routing and SSR
+# fallbacks. Add custom redirects here if needed (e.g. legacy paths).
+# -----------------------------------------------------------------------------
+# Example:
+# [[redirects]]
+#   from = "/old-path"
+#   to   = "/new-path"
+#   status = 301
+#   force = true
+
+
+# -----------------------------------------------------------------------------
+# Deploy contexts (optional overrides)
+# -----------------------------------------------------------------------------
+# [context.production.environment]
+#   NEXTAUTH_URL = "https://phantom.netlify.app"
+#
+# [context.deploy-preview.environment]
+#   NEXTAUTH_URL = "https://deploy-preview-PR_NUMBER--phantom.netlify.app"

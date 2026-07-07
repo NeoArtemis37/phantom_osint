@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------------
+// LOCAL DEV schema (SQLite).
+// Production uses prisma/schema.supabase.prisma (PostgreSQL on Supabase).
+// The Netlify build command (netlify.toml) swaps them automatically:
+//   cp prisma/schema.supabase.prisma prisma/schema.prisma
+// before running `prisma generate && next build`.
+//
+// To test against Supabase locally, run that cp command manually, set
+// DATABASE_URL + DIRECT_URL in .env, then `bun run db:generate`.
+// ---------------------------------------------------------------------------
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  role          String   @default("analyst") // admin, senior_analyst, analyst, viewer
+  clearance     String   @default("confidential") // unclassified, confidential, secret, top-secret
+  active        Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cases      CaseAccess[]
+  auditLogs  AuditLog[]
+  accounts   Account[]
+  sessions   Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String  @id @default(cuid())
+  sessionToken String  @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── CASE MANAGEMENT ────────────────────────────────────────────────────────
+
+model Case {
+  id            String   @id @default(cuid())
+  name          String
+  description   String   @default("")
+  status        String   @default("active") // active, closed, archived, cold
+  sensitivity   String   @default("confidential") // unclassified, confidential, secret, top-secret
+  intelligenceLevel String @default("BETA") // ALPHA (HVTarget), BETA (Associate), GAMMA (Historical)
+  tags          String   @default("[]") // JSON array of tags
+  targetProfile String   @default("{}") // JSON: target identifiers, biometrics, comms, associates, operational history
+  resolution    String   @default("") // capture, neutralized, relocated, false_positive, cold
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String?
+  createdByName String   @default("")
+
+  entities      Entity[]
+  relationships Relationship[]
+  timeline      TimelineEvent[]
+  transforms    TransformFlow[]
+  watchlists    WatchlistItem[]
+  modules       CaseModule[]
+  alerts        Alert[]
+  evidence      Evidence[]
+  access        CaseAccess[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model CaseAccess {
+  id        String   @id @default(cuid())
+  caseId    String
+  userId    String
+  role      String   @default("analyst") // lead, analyst, viewer
+  grantedAt DateTime @default(now())
+
+  case Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId])
+}
+
+// ─── ENTITIES & RELATIONSHIPS ───────────────────────────────────────────────
+
+model Entity {
+  id          String   @id @default(cuid())
+  caseId      String
+  name        String
+  type        String   // person, username, location, device, organization, email, phone, url, image, cryptocurrency, media
+  value       String   @default("")
+  metadata    String   @default("{}") // JSON: all profile data, confidence scores, source attribution
+  avatar      String   @default("")
+  color       String   @default("")
+  x           Float    @default(0)
+  y           Float    @default(0)
+  notes       String   @default("")
+  confidence  Int      @default(0) // 0-100 match confidence
+  threatLevel String   @default("unknown") // unknown, low, medium, high, critical
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case           Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sourceEdges    Relationship[] @relation("SourceEntity")
+  targetEdges    Relationship[] @relation("TargetEntity")
+  timelineEvents TimelineEvent[]
+  evidence       Evidence[]
+
+  @@index([caseId])
+  @@index([type])
+  @@index([confidence])
+}
+
+model Relationship {
+  id       String @id @default(cuid())
+  caseId   String
+  sourceId String
+  targetId String
+  type     String // owns, communicated, located_at, associated, member_of, operates, linked, reported, finances, familial, operational, geographic
+  label    String @default("")
+  metadata String @default("{}") // JSON: confidence, first_seen, last_seen, source
+  weight   Int    @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  source Entity @relation("SourceEntity", fields: [sourceId], references: [id], onDelete: Cascade)
+  target Entity @relation("TargetEntity", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+// ─── TIMELINE ───────────────────────────────────────────────────────────────
+
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  caseId      String
+  entityId    String?
+  title       String
+  description String   @default("")
+  eventType   String   @default("info") // info, alert, action, discovery, communication, capture, relocation, financial
+  timestamp   DateTime @default(now())
+  metadata    String   @default("{}") // JSON: source, confidence, geolocation
+  createdAt   DateTime @default(now())
+
+  case   Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  entity Entity? @relation(fields: [entityId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([timestamp])
+  @@index([eventType])
+}
+
+// ─── MODULES ────────────────────────────────────────────────────────────────
+
+model CaseModule {
+  id          String   @id @default(cuid())
+  caseId      String
+  moduleKey   String   // social_searcher, qwant_gibiru, osint_industries, idcrawl, maigret, sherlock, ghost, specter, wraith, revenant, custom_scraper
+  enabled     Boolean  @default(false)
+  config      String   @default("{}") // JSON: module-specific config
+  lastRun     DateTime?
+  status      String   @default("idle") // idle, running, completed, error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, moduleKey])
+  @@index([caseId])
+}
+
+// ─── ALERTS ─────────────────────────────────────────────────────────────────
+
+model Alert {
+  id          String   @id @default(cuid())
+  caseId      String
+  title       String
+  description String   @default("")
+  tier        String   @default("routine") // critical, urgent, routine
+  category    String   @default("discovery") // location_confirmed, imminent_threat, opsec_breach, associate_arrested, new_account, travel_pattern, financial, pattern_match, platform_migration
+  status      String   @default("active") // active, acknowledged, resolved, false_positive
+  entityId    String?
+  metadata    String   @default("{}") // JSON: source, confidence, geolocation, evidence_refs
+  triggeredAt DateTime @default(now())
+  acknowledgedAt DateTime?
+  acknowledgedBy  String?
+  createdAt   DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([tier])
+  @@index([status])
+  @@index([triggeredAt])
+}
+
+// ─── EVIDENCE ───────────────────────────────────────────────────────────────
+
+model Evidence {
+  id              String   @id @default(cuid())
+  caseId          String
+  entityId        String?
+  title           String
+  description     String   @default("")
+  sourceUrl       String   @default("")
+  sourceType      String   @default("web") // web, social_media, document, image, communication, financial, satellite
+  contentHash     String   @default("") // SHA-256 hash
+  data            String   @default("{}") // JSON: full evidence data, screenshots, metadata
+  confidence      String   @default("probable") // verified, probable, unconfirmed, disputed
+  legalReviewFlag Boolean  @default(false)
+  chainOfCustody  String   @default("[]") // JSON array: [{userId, action, timestamp}]
+  collectedAt     DateTime @default(now())
+  collectedBy     String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  case   Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  entity Entity? @relation(fields: [entityId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([contentHash])
+  @@index([sourceType])
+}
+
+// ─── TRANSFORMS ─────────────────────────────────────────────────────────────
+
+model TransformFlow {
+  id          String   @id @default(cuid())
+  caseId      String
+  name        String
+  description String   @default("")
+  steps       String   @default("[]") // JSON array of TransformStep
+  status      String   @default("draft") // draft, running, completed, failed
+  results     String   @default("{}") // JSON results
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+// ─── WATCHLIST ──────────────────────────────────────────────────────────────
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  caseId    String
+  term      String
+  type      String   @default("keyword") // keyword, username, email, phone, domain, hashtag, crypto_address
+  active    Boolean  @default(true)
+  lastHit   DateTime?
+  hitCount  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+// ─── AUDIT LOG ──────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  details   String   @default("{}") // JSON
+  ipAddress String   @default("")
+  timestamp DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+}
