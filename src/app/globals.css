@@ -1,0 +1,529 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* =============================================================================
+   CYBERPUNK / FUTURISTIC THEME — Forced dark
+   Inspired by usersearch.ai: deep black, neon cyan/purple/green, glow effects
+   ============================================================================= */
+
+:root {
+  --radius: 0.5rem;
+
+  /* Deep black backgrounds with subtle blue tint */
+  --background: #050810;
+  --foreground: #e6f0ff;
+
+  --card: #0a1020;
+  --card-foreground: #e6f0ff;
+
+  --popover: #0a1020;
+  --popover-foreground: #e6f0ff;
+
+  /* Cyan as primary — the signature cyber accent */
+  --primary: #00e5ff;
+  --primary-foreground: #001018;
+
+  --secondary: #0f1629;
+  --secondary-foreground: #e6f0ff;
+
+  --muted: #0c1325;
+  --muted-foreground: #6b7ba8;
+
+  /* Purple accent */
+  --accent: #a855f7;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ff2d6f;
+
+  --border: rgba(0, 229, 255, 0.12);
+  --input: rgba(0, 229, 255, 0.08);
+  --ring: #00e5ff;
+
+  /* Chart colors — neon palette */
+  --chart-1: #00e5ff;
+  --chart-2: #a855f7;
+  --chart-3: #00ff9d;
+  --chart-4: #ff6b35;
+  --chart-5: #ff2d6f;
+
+  --sidebar: #070b14;
+  --sidebar-foreground: #e6f0ff;
+  --sidebar-primary: #00e5ff;
+  --sidebar-primary-foreground: #001018;
+  --sidebar-accent: #0f1629;
+  --sidebar-accent-foreground: #e6f0ff;
+  --sidebar-border: rgba(0, 229, 255, 0.12);
+  --sidebar-ring: #00e5ff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0, 229, 255, 0.08), transparent),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(168, 85, 247, 0.06), transparent),
+      linear-gradient(180deg, #050810 0%, #070b14 100%);
+    background-attachment: fixed;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  /* Custom scrollbar — cyber styled */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 229, 255, 0.02);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(0, 229, 255, 0.3), rgba(168, 85, 247, 0.3));
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(0, 229, 255, 0.5), rgba(168, 85, 247, 0.5));
+  }
+}
+
+/* =============================================================================
+   Cyberpunk utility classes
+   ============================================================================= */
+
+/* Neon glow text — cyan + blue neon are the dominant cyber palette */
+.neon-cyan {
+  color: #00e5ff;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.6), 0 0 12px rgba(0, 229, 255, 0.3);
+}
+.neon-blue {
+  color: #1e90ff;
+  text-shadow: 0 0 4px rgba(30, 144, 255, 0.7), 0 0 12px rgba(30, 144, 255, 0.35);
+}
+.neon-purple {
+  color: #a855f7;
+  text-shadow: 0 0 4px rgba(168, 85, 247, 0.6), 0 0 12px rgba(168, 85, 247, 0.3);
+}
+.neon-green {
+  color: #00ff9d;
+  text-shadow: 0 0 4px rgba(0, 255, 157, 0.6), 0 0 12px rgba(0, 255, 157, 0.3);
+}
+
+/* Glow box shadows */
+.glow-cyan {
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25), 0 0 30px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.03);
+}
+.glow-blue {
+  box-shadow: 0 0 12px rgba(30, 144, 255, 0.28), 0 0 30px rgba(30, 144, 255, 0.1), inset 0 0 12px rgba(30, 144, 255, 0.03);
+}
+.glow-purple {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25), 0 0 30px rgba(168, 85, 247, 0.08);
+}
+.glow-green {
+  box-shadow: 0 0 12px rgba(0, 255, 157, 0.25), 0 0 30px rgba(0, 255, 157, 0.08);
+}
+
+/* Cyber border with glow on focus */
+.cyber-input {
+  background: rgba(0, 229, 255, 0.03);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  transition: all 0.2s ease;
+}
+.cyber-input:focus {
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.3), 0 0 16px rgba(0, 229, 255, 0.15);
+  background: rgba(0, 229, 255, 0.05);
+}
+
+/* Cyber card — glassmorphism with neon edge */
+.cyber-card {
+  background: linear-gradient(135deg, rgba(10, 16, 32, 0.9), rgba(15, 22, 41, 0.7));
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+.cyber-card:hover {
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.1), 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Cyber button — primary */
+.cyber-btn {
+  background: linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%);
+  color: #001018;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+.cyber-btn:hover {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.2);
+  transform: translateY(-1px);
+}
+.cyber-btn:active {
+  transform: translateY(0);
+}
+
+/* Animated scan line effect for headers */
+.scan-line {
+  position: relative;
+  overflow: hidden;
+}
+.scan-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.08), transparent);
+  animation: scan 3s linear infinite;
+}
+@keyframes scan {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Pulsing status dot */
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.5;
+  animation: pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* Grid background overlay (cyber grid) */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Fade-in animation for live search results */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.25s ease-out;
+}
+
+/* Shimmer skeleton */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.03) 25%, rgba(0, 229, 255, 0.08) 50%, rgba(0, 229, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Cyber tab active indicator */
+.cyber-tab-active {
+  color: #00e5ff;
+  border-bottom: 2px solid #00e5ff;
+  box-shadow: inset 0 -8px 16px -8px rgba(0, 229, 255, 0.3);
+}
+
+/* =============================================================================
+   INTRO SCREEN — fade in/out + artemis37 quote
+   ============================================================================= */
+
+@keyframes intro-fade-in {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes intro-fade-out {
+  0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-20px) scale(1.05); filter: blur(8px); }
+}
+@keyframes intro-letter-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(0, 229, 255, 0.4), 0 0 20px rgba(0, 229, 255, 0.2); }
+  50% { text-shadow: 0 0 16px rgba(0, 229, 255, 0.8), 0 0 40px rgba(168, 85, 247, 0.4); }
+}
+@keyframes intro-ring-expand {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes intro-scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(ellipse at center, #050810 0%, #000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.intro-screen.fading-out {
+  animation: intro-fade-out 0.8s ease-in forwards;
+}
+.intro-text {
+  animation: intro-fade-in 1.2s ease-out, intro-letter-glow 3s ease-in-out 1.2s;
+}
+.intro-ring {
+  position: absolute;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 50%;
+  animation: intro-ring-expand 3s ease-out infinite;
+}
+.intro-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.6), transparent);
+  animation: intro-scan-line 2.5s linear infinite;
+}
+
+/* =============================================================================
+   RADIAL MENU — circular module selector (right side)
+   ============================================================================= */
+
+@keyframes radial-segment-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes radial-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.radial-menu {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radial-menu.dragging {
+  cursor: grabbing;
+}
+.radial-menu.dragging .radial-segment {
+  pointer-events: none;
+}
+
+/* Rotating ring container — holds the orbit decoration + all segments */
+.radial-ring {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+
+/* Decorative orbit ring (the visible "disk" that rotates) */
+.radial-orbit {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 229, 255, 0.25);
+  box-shadow:
+    inset 0 0 24px rgba(0, 229, 255, 0.06),
+    0 0 16px rgba(0, 229, 255, 0.08);
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.04) 0%, transparent 70%);
+}
+/* Idle slow spin when menu is closed — gives the disk a living feel */
+.radial-menu:not(:has(.radial-segment)) .radial-orbit {
+  animation: radial-orbit-spin 60s linear infinite;
+}
+
+.radial-segment {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  animation: radial-segment-in 0.4s ease-out backwards;
+}
+.radial-segment:hover {
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+}
+.radial-center {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.3), inset 0 0 12px rgba(0, 229, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  z-index: 2;
+}
+.radial-center:hover {
+  box-shadow: 0 0 36px rgba(0, 229, 255, 0.5), inset 0 0 16px rgba(0, 229, 255, 0.2);
+  transform: scale(1.05);
+}
+.radial-center.expanded {
+  transform: rotate(45deg);
+}
+
+/* Small "rotate one step" button — appears at top of hub when open */
+.radial-rotate-btn {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(5, 8, 16, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: rgba(0, 229, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.2s ease;
+}
+.radial-rotate-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  color: rgba(0, 229, 255, 1);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* Floating description tooltip (positioned to the left of the menu) */
+.radial-description-floating {
+  position: absolute;
+  right: calc(100% + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(5, 8, 16, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+  backdrop-filter: blur(8px);
+  animation: radial-segment-in 0.2s ease-out;
+}
+
+/* Legacy description (kept for backwards compat) */
+.radial-description {
+  position: absolute;
+  right: 64px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(5, 8, 16, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+.radial-segment:hover .radial-description {
+  opacity: 1;
+}
+
+/* =============================================================================
+   MODE TOGGLE — top-left Active/Passive switch
+   ============================================================================= */
+
+@keyframes mode-toggle-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(0, 229, 255, 0.6); }
+}
+.mode-toggle-active {
+  animation: mode-toggle-glow 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   FLOATING GRAPH ORBS — circle result visualization
+   ============================================================================= */
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+.floating-orb {
+  animation: orb-float 4s ease-in-out infinite, orb-pulse 3s ease-in-out infinite;
+}
